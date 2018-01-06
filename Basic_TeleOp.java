@@ -1,10 +1,11 @@
-
-package org.firstinspires.ftc.teamcode;
-
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.Range;
-
+import android.app.Activity;
+import android.graphics.Color;
+import android.view.View;
+import com.qualcomm.robotcore.hardware.ColorSensor;
+import com.qualcomm.robotcore.hardware.Servo;
 //Basic TeleOp for robot
 
 public class Basic_TeleOp extends OpMode {
@@ -14,16 +15,23 @@ public class Basic_TeleOp extends OpMode {
     double BRval = 0;
     double BLval = 0;
 
+    double servoVal = 0;
+
     DcMotor FrontRight;
     DcMotor FrontLeft;
     DcMotor BackRight;
     DcMotor BackLeft;
-
+    ColorSensor SenseColor;
     final int MAX = 1;
     final double CLIP_NUM = 0.9;
     final double FORWARD_POWER = 1;
+    float hsvValues[] = {0F,0F,0F};
 
-    //int spikeTime = 0;
+    Servo servo;
+
+    // values is a reference to the hsvValues array.
+    final float values[] = hsvValues;
+    //int spikeTime = 0;34
 
     public Basic_TeleOp() {
 
@@ -42,6 +50,8 @@ public class Basic_TeleOp extends OpMode {
         FrontLeft = hardwareMap.dcMotor.get("FrontLeft");
         FrontRight.setDirection(DcMotor.Direction.REVERSE);
         BackRight.setDirection(DcMotor.Direction.REVERSE);
+        SenseColor = hardwareMap.colorSensor.get("RGBSensor");
+        servo = hardwareMap.servo.get("Servo");
     }
 
     /*
@@ -56,12 +66,14 @@ public class Basic_TeleOp extends OpMode {
         // direction: left_stick_x ranges from -1 to 1, where -1 is full left
         // and 1 is full right
 
+        SenseColor.enableLed(true);
+
         double y1 = -gamepad1.left_stick_y;
         double x1 = gamepad1.left_stick_x;
         double y2 = -gamepad1.right_stick_y;
         double x2 = gamepad1.right_stick_x; //This one is for turning
 
-        double leftTrigger = gamepad1.left_trigger; //Left is to accelerate, right is to brake
+        double leftTrigger = gamepad1.left_trigger;
         double rightTrigger = gamepad1.right_trigger;
 
         boolean leftBumper = gamepad2.left_bumper;
@@ -69,10 +81,12 @@ public class Basic_TeleOp extends OpMode {
 
         double armStickValue = -gamepad2.left_stick_y;
 
-        boolean dpadUP = gamepad1.dpad_up;
+        boolean dpadUP = gamepad2.dpad_up;
         boolean dpadDOWN = gamepad1.dpad_down;
         boolean dpadLEFT = gamepad1.dpad_left;
         boolean dpadRIGHT = gamepad1.dpad_right;
+
+        boolean aButton = gamepad2.a;
 
         //On a scale of 1, -1, if it's less than 0.05, then it may be 0 in reality. 12.75 in 255 land
         if (Math.abs(x1) <= 0.05*MAX)
@@ -169,6 +183,16 @@ public class Basic_TeleOp extends OpMode {
         Range.clip(BRval, -CLIP_NUM, CLIP_NUM);
         Range.clip(FRval, -CLIP_NUM, CLIP_NUM);
 
+        if (dpadLEFT)
+            servoVal = 0.3;
+        else
+            servoVal = 0;
+
+        if (aButton)
+            servo.setDirection(Servo.Direction.REVERSE);
+        else
+            servo.setDirection(Servo.Direction.FORWARD);
+
         /*
         boolean imaniDoesNotCareForHerOwnSafety = gamepad2.a;
         if ((lastWasForSlow && !imaniDoesNotCareForHerOwnSafety) || (lastWasBackSlow && !gamepad2.y))
@@ -180,6 +204,10 @@ public class Basic_TeleOp extends OpMode {
         BackRight.setPower(BRval);
         BackLeft.setPower(BLval);
 
+        servo.setPosition(servoVal);
+
+        telemetry.addData("Servo: ", servoVal);
+
         telemetry.addData("Front Left: ", FLval);
         telemetry.addData("Front Right: ", FRval);
         telemetry.addData("Back Left: ", BLval);
@@ -187,6 +215,16 @@ public class Basic_TeleOp extends OpMode {
         telemetry.addData("xLeft: ", x1);
         telemetry.addData("yLeft: ", y1);
         telemetry.addData("xRight: ", x2);
+
+        Color.RGBToHSV(SenseColor.red(), SenseColor.green(), SenseColor.blue(), hsvValues);
+
+        // send the info back to driver station using telemetry function.
+        telemetry.addData("Clear", SenseColor.alpha());
+        telemetry.addData("Red  ", SenseColor.red());
+        telemetry.addData("Green", SenseColor.green());
+        telemetry.addData("Blue ", SenseColor.blue());
+        telemetry.addData("Hue", hsvValues[0]);
+
     }
 
     /*
